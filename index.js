@@ -1,6 +1,5 @@
 const { readFileSync, writeFileSync, appendFileSync } = require('fs');
 const crypto = require('crypto');
-const cryptoJS = require('cryptojs');
 
 class Transaction {
     constructor(version, locktime, vin, vout) {
