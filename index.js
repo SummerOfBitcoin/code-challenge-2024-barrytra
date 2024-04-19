@@ -11,10 +11,11 @@ class Transaction {
 }
 
 class Block {
-    constructor(transactions, prevBlockHash) {
+    constructor(transactions, prevBlockHash, difficulty) {
         this.transactions = transactions;
         this.prevBlockHash = prevBlockHash;
         this.timestamp = Date.now();
+        this.target = difficulty;
         this.nonce = 0;
     }
 
@@ -43,6 +44,7 @@ class Block {
         return {
             prevBlockHash: this.prevBlockHash,
             timestamp: this.timestamp,
+            target: this.target,
             nonce: this.nonce
         };
     }
@@ -149,15 +151,15 @@ function validateTransactions(transactions) {
 }
 
 // Create block
-function createBlock(transactions, prevBlockHash) {
-    return new Block(transactions, prevBlockHash);
+function createBlock(transactions, prevBlockHash, difficulty) {
+    return new Block(transactions, prevBlockHash, difficulty);
 }
 
 // Mine block
 function mineBlock(transactions, prevBlockHash, difficulty) {
     validateTransactions(transactions);
     // console.log(validTransactions);
-    const block = createBlock(validTransactions, prevBlockHash);
+    const block = createBlock(validTransactions, prevBlockHash, difficulty);
     const minedBlockHash = block.mineBlock(difficulty);
     return { minedBlockHash, block };
 }
