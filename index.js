@@ -1,5 +1,11 @@
 const { readFileSync, writeFileSync, appendFileSync } = require('fs');
 const crypto = require('crypto');
+const { serializeTransaction } = require("./utils/serialiseTransaction");
+const { findMerkleRoot } = require("./utils/findMerkleRoot");
+const { script_p2pkh } = require("./verification/script/script")
+const { HASH256 } = require("./op_codes/opcodes");
+const { verify_p2pkh } = require('./verification/signatures/signature');
+const {serializeBlockHeader} = require("./utils/serializeBlockHeader")
 
 class Transaction {
     constructor(version, locktime, vin, vout) {
@@ -11,12 +17,13 @@ class Transaction {
 }
 
 class Block {
-    constructor(transactions, prevBlockHash, difficulty) {
+    constructor(transactions, prevBlockHash, difficulty, merkleRoot) {
         this.transactions = transactions;
         this.prevBlockHash = prevBlockHash;
-        this.timestamp = Date.now();
+        this.timestamp = 1713647756;
         this.target = difficulty;
         this.nonce = 0;
+        this.merkleRoot = merkleRoot;
     }
 
     hashBlock() {
@@ -41,40 +48,16 @@ class Block {
     }
 
     getBlockHeader() {
-        return {
-            prevBlockHash: this.prevBlockHash,
-            timestamp: this.timestamp,
-            target: this.target,
-            nonce: this.nonce
-        };
+        const version = "010000000";
+        const prevBlockHash = this.prevBlockHash;
+        const merkleRoot = this.merkleRoot;
+        const timestamp = this.timestamp;
+        const bits = "1f00ffff";
+        const nonce = this.nonce;
+
+        return serializeBlockHeader(version,prevBlockHash,merkleRoot,timestamp,bits,nonce);
     }
 }
-
-// OP_HASH function
-function OP_HASH(s) {
-    let hash = crypto.createHash('sha256').update(s, 'hex').digest();
-    hash = crypto.createHash('ripemd160').update(hash).digest();
-    // console.log(Buffer.from(hash).toString("hex"));
-    return Buffer.from(hash).toString("hex")
-}
-
-// function to get script Pubkey
-function getScriptpubkey_v0p2wpkh(str) {
-    let scriptpubkey = [];
-
-    for (let i = 21; i < str.length; i++) {
-        scriptpubkey += str[i];
-    }
-    return scriptpubkey.toString();
-}
-
-function v0_p2wpkh(vin) {
-    let hash = OP_HASH(vin.witness[1]);
-    let scriptPubkey = getScriptpubkey_v0p2wpkh(vin.prevout.scriptpubkey_asm);
-    if (hash === scriptPubkey) return true;
-    return false;
-}
-
 
 
 // Parse transaction JSON files
@@ -83,27 +66,27 @@ function parseTransactionFile(filename) {
     return new Transaction(version, locktime, vin, vout);
 }
 
-function getTxid(transactionJson) {
-    // Parse JSON transaction
-    // const transaction = JSON.parse(transactionJson);
 
-    // Serialize transaction
-    const serializedTransaction = JSON.stringify(transactionJson, null, 0);
+function getTxid(serializedTransaction) {
 
     // Double SHA256 hash
-    const hash1 = crypto.createHash('sha256').update(serializedTransaction).digest();
-    const hash2 = crypto.createHash('sha256').update(hash1).digest();
+    const hash = HASH256(serializedTransaction)
 
     // Reverse byte order
-    const txid = Buffer.from(hash2).reverse().toString('hex');
+    const txid = Buffer.from(hash).reverse().toString('hex');
     return txid;
-    // console.log("Transaction ID (TxID):", txid);
 }
 
 // Validate transactions
 let validTransactions = [];
 function validateTransactions(transactions) {
     // Simulated validation, assuming all transactions are valid
+    // console.log(txn)
+    // const txid = getTxid(txn);
+    // console.log("txid:", txid);
+    // console.log("file:", Buffer.from(crypto.createHash('sha256').update(txid, "hex").digest()).toString("hex"));
+    // console.log((crypto.createHash('sha256').update(getTxid(transactions[0]), "hex").digest()))
+    let a = 1;
     transactions.map((transaction) => {
         // for coinbase transaction
 
@@ -128,45 +111,53 @@ function validateTransactions(transactions) {
         }
         //  *** check pubkey script validation ***
         if (flg) {
-            flg = false;
-            transaction.vin.map((vin) => {
-                if (vin.prevout.scriptpubkey_type === "v0_p2wpkh") {
-                    flg = true;
-                    if (!v0_p2wpkh(vin)) {
+            for (let vin of transaction.vin) {
+                if (vin.prevout.scriptpubkey_type === "p2pkh") {
+                    // pubkey script validation
+                    if (!script_p2pkh(vin) || !verify_p2pkh(transaction, vin)) {
                         flg = false;
-                        console.log("hello");
+                        break;
                     }
                 }
             }
-            )
             if (flg) {
                 // console.log(transaction);
                 // getTxid(transaction);
-                validTransactions.push(getTxid(transaction));
+                // Serialize transaction
+                const serializedTransaction = serializeTransaction(transaction)
+                validTransactions.push(getTxid(serializedTransaction));
             }
         }
+
         // validate signatures. we need message for that
 
     })
 }
 
 // Create block
-function createBlock(transactions, prevBlockHash, difficulty) {
-    return new Block(transactions, prevBlockHash, difficulty);
+function createBlock(transactions, prevBlockHash, difficulty, merkleRoot) {
+    return new Block(transactions, prevBlockHash, difficulty, merkleRoot);
 }
+
+const serializedCoinbaseTransaction = "01000000010000000000000000000000000000000000000000000000000000000000000000ffffffff0804233fa04e028b12ffffffff0130490b2a010000004341047eda6bd04fb27cab6e7c28c99b94977f073e912f25d1ff7165d9c95cd9bbe6da7e7ad7f2acb09e0ced91705f7616af53bee51a238b7dc527f2be0aa60469d140ac00000000"
+
+const coinbaseTxid = getTxid(serializedCoinbaseTransaction);
+validTransactions.push(coinbaseTxid);
 
 // Mine block
 function mineBlock(transactions, prevBlockHash, difficulty) {
     validateTransactions(transactions);
     // console.log(validTransactions);
-    const block = createBlock(validTransactions, prevBlockHash, difficulty);
+    const merkleRoot = findMerkleRoot(validTransactions);
+    console.log(merkleRoot)
+    const block = createBlock(validTransactions, prevBlockHash, difficulty, merkleRoot);
     const minedBlockHash = block.mineBlock(difficulty);
     return { minedBlockHash, block };
 }
 
 // Write block and transactions to output.txt
-function writeToOutput(blockHeader,serializedCoinbaseTransaction, transactions) {
-    writeFileSync('output.txt', JSON.stringify(blockHeader) + '\n');
+function writeToOutput(blockHeader, serializedCoinbaseTransaction, transactions) {
+    writeFileSync('output.txt', blockHeader + '\n');
     appendFileSync('output.txt', serializedCoinbaseTransaction + '\n');
     transactions.forEach(tx => {
         appendFileSync('output.txt', tx + '\n');
@@ -182,26 +173,6 @@ const difficulty = "0000ffff0000000000000000000000000000000000000000000000000000
 var transactionFiles = [];
 var normalizedPath = require("path").join(__dirname, "mempool");
 
-const coinbaseTransaction = {
-    "version": 1,
-    "locktime": 0,
-    "vin": [
-        {
-            "coinbase": "03f39a0704d8a85f00000000000000000000000000000000000000000000000000000000"
-        }
-    ],
-    "vout": [
-        {
-            "value": 6250000000,
-            "scriptpubkey": "76a9144d1015b504d0b8ce5007ea44c258ae3e02d333f188ac"
-        }
-    ]
-}
-const serializedCoinbaseTransaction = JSON.stringify(coinbaseTransaction, null, 0);
-
-
-
-
 
 require("fs").readdirSync(normalizedPath).forEach(function (file) {
     const curFile = require("./mempool/" + file);
@@ -216,6 +187,6 @@ const transactions = transactionFiles.map(parseTransactionFile);
 const { minedBlockHash, block } = mineBlock(transactionFiles, prevBlockHash, difficulty);
 
 // Write to output.txt
-writeToOutput(block.getBlockHeader(),serializedCoinbaseTransaction, validTransactions);
+writeToOutput(block.getBlockHeader(), serializedCoinbaseTransaction, validTransactions);
 // console.log(`Mined block hash: ${minedBlockHash}`);
 // console.log('Block and transactions written to output.txt');

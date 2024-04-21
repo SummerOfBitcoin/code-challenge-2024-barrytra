@@ -10,6 +10,9 @@
   "license": "ISC",
   "dependencies": {
     "cryptojs": "^2.5.3",
+    "ecdsa": "^0.7.0",
+    "elliptic": "^6.5.5",
+    "secp256k1": "^5.0.0",
     "uint8array-tools": "^0.0.7"
   }
 }
