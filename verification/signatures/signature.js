@@ -1,9 +1,6 @@
-const { verify } = require('ecdsa');
-const curve = require('elliptic').ec('secp256k1');
 const { serializeTransaction } = require('../../utils/serialiseTransaction');
 const { HASH256 } = require('../../op_codes/opcodes');
 const secp256k1 = require('secp256k1');
-const { sign } = require('ecdsa/lib/ecdsa');
 
 
 function verifySignature(publicKey, signatureObj, messageHash) {
