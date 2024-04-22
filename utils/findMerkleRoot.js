@@ -2,8 +2,8 @@ const crypto = require('crypto');
 const { HASH256 } = require('../op_codes/opcodes');
 
 // Function to calculate the Merkle root
-function findMerkleRoot(transactions) {
-
+function findMerkleRoot(txns) {
+    let transactions = txns;
     if (transactions.length === 1) {
         return transactions[0];
     }
