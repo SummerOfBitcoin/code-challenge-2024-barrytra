@@ -29,7 +29,7 @@ class Block {
     hashBlock() {
         const blockString = serializeBlockHeader(this.version, this.prevBlockHash, this.merkleRoot, this.timestamp, this.bits, this.nonce);
         const buffer = Buffer.from(blockString, "hex");
-        return Buffer.from(HASH256(buffer)).toString("hex");
+        return Buffer.from(HASH256(buffer)).reverse().toString("hex");
     }
 
     mineBlock(difficulty) {
