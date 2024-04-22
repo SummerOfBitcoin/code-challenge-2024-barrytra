@@ -16,7 +16,7 @@ function serializeBlockHeader(version, prevBlockHash, merkleRoot, timestamp, bit
     buffer = Buffer.concat([buffer, Buffer.from((prevBlockHash), "hex").reverse()]);
 
     // merkleRoot
-    buffer = Buffer.concat([buffer, Buffer.from((merkleRoot), "hex").reverse()]);
+    buffer = Buffer.concat([buffer, Buffer.from((merkleRoot), "hex")]);
 
     // timestamp
     buffer = Buffer.concat([buffer, Buffer.from(timestamp.toString(16).padStart(8, '0'), 'hex').reverse()]);
