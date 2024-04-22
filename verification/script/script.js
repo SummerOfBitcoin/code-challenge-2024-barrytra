@@ -16,6 +16,7 @@ function script_p2pkh(vin) {
     }
     let hash = OP_HASH(pubkey);
     let scriptPubkey = getScriptpubkey_p2pkh(vin.prevout.scriptpubkey);
+    // console.log(hash===scriptPubkey)
     if (hash === scriptPubkey) return true;
     return false;
 }

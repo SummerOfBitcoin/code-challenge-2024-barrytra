@@ -1,4 +1,4 @@
-function serializeTransaction(transaction) {
+function serializeMessage(transaction, vin, hashType) {
     let buffer = Buffer.alloc(0);
 
     // Version
@@ -21,12 +21,12 @@ function serializeTransaction(transaction) {
         // Vout Index
         buffer = Buffer.concat([buffer, Buffer.from(input.vout.toString(16).padStart(8, '0'), 'hex').reverse()]);
 
-        // Script Length
-        buffer = Buffer.concat([buffer, encodeVarInt(input.scriptsig.length / 2)]);
-
-            // Unlocking Script
-        buffer = Buffer.concat([buffer, Buffer.from(input.scriptsig, 'hex')]);
-
+        if(input.prevout.scriptpubkey === vin.prevout.scriptpubkey){
+            buffer = Buffer.concat([buffer, encodeVarInt(vin.prevout.scriptpubkey.length / 2)]);
+            buffer = Buffer.concat([buffer, Buffer.from(vin.prevout.scriptpubkey, 'hex')]);
+        }else {
+            buffer = Buffer.concat([buffer, Buffer.from('00', 'hex')])
+        }
 
         // Sequence
         buffer = Buffer.concat([buffer, Buffer.from(input.sequence.toString(16).padStart(8, '0'), 'hex').reverse()]);
@@ -49,7 +49,7 @@ function serializeTransaction(transaction) {
 
     // Witness Data (for SegWit)
     for (let input of transaction.vin) {
-            if (input.witness) {
+        if (input.witness) {
             buffer = Buffer.concat([buffer, encodeVarInt(input.witness.length)]);
             for (let witnessItem of input.witness) {
                 buffer = Buffer.concat([buffer, encodeVarInt(witnessItem.length / 2)]);
@@ -60,7 +60,10 @@ function serializeTransaction(transaction) {
     }
 
     // Locktime
-    buffer = Buffer.concat([buffer, Buffer.from(transaction.locktime.toString(16).padStart(8, '0'), 'hex').reverse()]);
+    buffer = Buffer.concat([buffer, Buffer.from(transaction.locktime.toString(16).padStart(8, '0'), 'hex').reverse()])
+
+    // hashType
+    buffer = Buffer.concat([buffer, Buffer.from(hashType.toString(16).padStart(8, '0'), 'hex').reverse()]);
 
     return buffer;
 }
@@ -78,5 +81,5 @@ function encodeVarInt(value) {
 }
 
 module.exports = {
-    serializeTransaction,
+    serializeMessage,
 }

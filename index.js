@@ -1,6 +1,6 @@
 const { readFileSync, writeFileSync, appendFileSync } = require('fs');
 const crypto = require('crypto');
-const { serializeTransaction } = require("./utils/serialiseTransaction");
+const { serializeTransaction } = require("./utils/serializeTransaction");
 const { findMerkleRoot } = require("./utils/findMerkleRoot");
 const { script_p2pkh } = require("./verification/script/script")
 const { HASH256 } = require("./op_codes/opcodes");
@@ -103,8 +103,10 @@ function validateTransactions(transactions) {
         }
         //  *** check pubkey script validation ***
         if (flg) {
+            flg = false;
             for (let vin of transaction.vin) {
                 if (vin.prevout.scriptpubkey_type === "p2pkh") {
+                    flg = true;
                     // pubkey script validation
                     if (!script_p2pkh(vin) || !verify_p2pkh(transaction, vin)) {
                         flg = false;
