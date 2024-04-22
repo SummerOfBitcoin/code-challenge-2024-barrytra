@@ -133,8 +133,8 @@ function createBlock(transactions, prevBlockHash, difficulty, merkleRoot) {
 
 const serializedCoinbaseTransaction = "010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff2503233708184d696e656420627920416e74506f6f6c373946205b8160a4256c0000946e0100ffffffff02f595814a000000001976a914edf10a7fac6b32e24daa5305c723f3de58db1bc888ac0000000000000000266a24aa21a9edfaa194df59043645ba0f58aad74bfd5693fa497093174d12a4bb3b0574a878db0120000000000000000000000000000000000000000000000000000000000000000000000000"
 
-const coinbaseTxid = getTxid(serializedCoinbaseTransaction);
-
+const coinbaseTxid = getTxid(Buffer.from(serializedCoinbaseTransaction, "hex"));
+validTransactions.push(coinbaseTxid);
 
 // Mine block
 function mineBlock(transactions, prevBlockHash, difficulty) {
@@ -149,7 +149,6 @@ function mineBlock(transactions, prevBlockHash, difficulty) {
 function writeToOutput(blockHeader, serializedCoinbaseTransaction, transactions) {
     writeFileSync('output.txt', blockHeader + '\n');
     appendFileSync('output.txt', serializedCoinbaseTransaction + '\n');
-    appendFileSync('output.txt', Buffer.from(coinbaseTxid, "hex").reverse().toString("hex") + '\n');
     transactions.forEach(tx => {
         // reverse byte order
         tx = Buffer.from(tx, "hex").reverse().toString("hex");
