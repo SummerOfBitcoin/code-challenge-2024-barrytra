@@ -68,7 +68,6 @@ function getTxid(serializedTransaction) {
     // Double SHA256 hash
     const hash = HASH256(serializedTransaction)
 
-    // Reverse byte order
     const txid = Buffer.from(hash).toString('hex');
     return txid;
 }
@@ -83,7 +82,7 @@ function validateTransactions(transactions) {
     // console.log("file:", Buffer.from(crypto.createHash('sha256').update(txid, "hex").digest()).toString("hex"));
     // console.log((crypto.createHash('sha256').update(getTxid(transactions[0]), "hex").digest()))
     let a = 1;
-    transactions.map((transaction) => {
+    for(let transaction of transactions){
         // for coinbase transaction
 
         // OP_HASH(transaction);
@@ -127,7 +126,7 @@ function validateTransactions(transactions) {
 
         // validate signatures. we need message for that
 
-    })
+    }
 }
 
 // Create block
@@ -156,6 +155,7 @@ function writeToOutput(blockHeader, serializedCoinbaseTransaction, transactions)
     writeFileSync('output.txt', blockHeader + '\n');
     appendFileSync('output.txt', serializedCoinbaseTransaction + '\n');
     transactions.forEach(tx => {
+        // reverse byte order
         tx = Buffer.from(tx, "hex").reverse().toString("hex");
         appendFileSync('output.txt', tx + '\n');
     });
