@@ -35,15 +35,12 @@ class Block {
     mineBlock(difficulty) {
         while (this.nonce < 4294967295) {
             this.nonce++;
-            console.log(this.nonce)
             const hash = this.hashBlock();
             for (let i = 0; i < hash.length; i++) {
                 if (hash[i] > difficulty[i]) {
                     break;
                 }
                 if (hash[i] < difficulty[i]) {
-                    console.log(serializeBlockHeader(this.version, this.prevBlockHash, this.merkleRoot, this.timestamp, this.bits, this.nonce))
-                    console.log(hash)
                     return;
                 }
             }
@@ -144,7 +141,6 @@ function mineBlock(transactions, prevBlockHash, difficulty) {
     validateTransactions(transactions);
     // console.log(validTransactions);
     const merkleRoot = findMerkleRoot(validTransactions);
-    console.log(merkleRoot)
     const block = createBlock(prevBlockHash, merkleRoot);
     const minedBlockHash = block.mineBlock(difficulty);
     return { minedBlockHash, block };
