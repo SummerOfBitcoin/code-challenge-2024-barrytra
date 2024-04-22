@@ -18,7 +18,7 @@ class Transaction {
 
 class Block {
     constructor( prevBlockHash, merkleRoot) {
-        this.version = "010000000";
+        this.version = "000000000";
         this.prevBlockHash = prevBlockHash;
         this.merkleRoot = merkleRoot;
         this.timestamp = 1713647756;
