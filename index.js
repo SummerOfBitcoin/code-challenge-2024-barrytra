@@ -17,22 +17,23 @@ class Transaction {
 }
 
 class Block {
-    constructor(transactions, prevBlockHash, difficulty, merkleRoot) {
-        this.transactions = transactions;
+    constructor( prevBlockHash, merkleRoot) {
+        this.version = "010000000";
         this.prevBlockHash = prevBlockHash;
-        this.timestamp = 1713647756;
-        this.target = difficulty;
-        this.nonce = 0;
         this.merkleRoot = merkleRoot;
+        this.timestamp = 1713647756;
+        this.bits = "1f00ffff";
+        this.nonce = 0;
     }
 
     hashBlock() {
-        const blockString = JSON.stringify(this);
-        return crypto.createHash('sha256').update(blockString).digest('hex');
+        const blockString = serializeBlockHeader(this.version, this.prevBlockHash, this.merkleRoot, this.timestamp, this.bits, this.nonce);
+        const buffer = Buffer.from(blockString, "hex");
+        return Buffer.from(HASH256(buffer)).toString("hex");
     }
 
     mineBlock(difficulty) {
-        while (true) {
+        while (this.nonce < 4294967295) {
             this.nonce++;
             console.log(this.nonce)
             const hash = this.hashBlock();
@@ -41,6 +42,8 @@ class Block {
                     break;
                 }
                 if (hash[i] < difficulty[i]) {
+                    console.log(serializeBlockHeader(this.version, this.prevBlockHash, this.merkleRoot, this.timestamp, this.bits, this.nonce))
+                    console.log(hash)
                     return;
                 }
             }
@@ -48,14 +51,7 @@ class Block {
     }
 
     getBlockHeader() {
-        const version = "010000000";
-        const prevBlockHash = this.prevBlockHash;
-        const merkleRoot = this.merkleRoot;
-        const timestamp = this.timestamp;
-        const bits = "1f00ffff";
-        const nonce = this.nonce;
-
-        return serializeBlockHeader(version,prevBlockHash,merkleRoot,timestamp,bits,nonce);
+        return serializeBlockHeader(this.version, this.prevBlockHash, this.merkleRoot, this.timestamp, this.bits, this.nonce)
     }
 }
 
@@ -150,7 +146,7 @@ function mineBlock(transactions, prevBlockHash, difficulty) {
     // console.log(validTransactions);
     const merkleRoot = findMerkleRoot(validTransactions);
     console.log(merkleRoot)
-    const block = createBlock(validTransactions, prevBlockHash, difficulty, merkleRoot);
+    const block = createBlock(prevBlockHash, merkleRoot);
     const minedBlockHash = block.mineBlock(difficulty);
     return { minedBlockHash, block };
 }
