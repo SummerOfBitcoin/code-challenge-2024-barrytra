@@ -21,7 +21,7 @@ class Block {
         this.version = "20000000";
         this.prevBlockHash = prevBlockHash;
         this.merkleRoot = merkleRoot;
-        this.timestamp = 1713647756;
+        this.timestamp = Date.now()/1000;
         this.bits = "1f00ffff";
         this.nonce = 0;
     }
