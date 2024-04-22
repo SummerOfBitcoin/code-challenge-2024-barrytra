@@ -2,10 +2,10 @@ const { readFileSync, writeFileSync, appendFileSync } = require('fs');
 const crypto = require('crypto');
 const { serializeTransaction } = require("./utils/serializeTransaction");
 const { findMerkleRoot } = require("./utils/findMerkleRoot");
-const { script_p2pkh } = require("./verification/script/script")
+const { script_p2pkh, script_v0_p2wpkh } = require("./verification/script/script")
 const { HASH256 } = require("./op_codes/opcodes");
-const { verify_p2pkh } = require('./verification/signatures/signature');
-const {serializeBlockHeader} = require("./utils/serializeBlockHeader")
+const { verify_p2pkh, verify_v0_p2wpkh } = require('./verification/signatures/signature');
+const {serializeBlockHeader} = require("./utils/serializeBlockHeader");
 
 class Transaction {
     constructor(version, locktime, vin, vout) {
@@ -69,16 +69,51 @@ function getTxid(serializedTransaction) {
     return txid;
 }
 
+const txn = {
+    "version": 1,
+    "locktime": 0,
+    "vin": [
+        {
+            "txid": "f615c0412f959c0b3813cbd232bbb1c1a8ad656c37fb60b601f633a6d2d76942",
+            "vout": 20,
+            "prevout": {
+                "scriptpubkey": "0014df4bf9f3621073202be59ae590f55f42879a21a0",
+                "scriptpubkey_asm": "OP_0 OP_PUSHBYTES_20 df4bf9f3621073202be59ae590f55f42879a21a0",
+                "scriptpubkey_type": "v0_p2wpkh",
+                "scriptpubkey_address": "bc1qma9lnumzzpejq2l9ntjepa2lg2re5gdqn3nf0c",
+                "value": 175902
+            },
+            "scriptsig": "",
+            "scriptsig_asm": "",
+            "witness": [
+                "3045022100a2a839100b7ca7dc97ca8234de56caabc5d30bf5ce561aa61ac1925d9ed09ed60220625b88cc6ddc0715c178fb57fd1ffb65ee905de7670595f2dea9c5feeb6b40d401",
+                "03cbf0481cd6ca805552d024e051f1f73086a2abebecdec8bc793d5ef87ec1a2f6"
+            ],
+            "is_coinbase": false,
+            "sequence": 4294967295
+        }
+    ],
+    "vout": [
+        {
+            "scriptpubkey": "a914626b93cce10ebd0d4d876487f602272c01e39e2387",
+            "scriptpubkey_asm": "OP_HASH160 OP_PUSHBYTES_20 626b93cce10ebd0d4d876487f602272c01e39e23 OP_EQUAL",
+            "scriptpubkey_type": "p2sh",
+            "scriptpubkey_address": "3AfR1wwfaaftqLfv2pAa9ebEXG43uZ9cdn",
+            "value": 172905
+        }
+    ]
+}
+
 // Validate transactions
 let validTransactions = [];
 function validateTransactions(transactions) {
+    let ct = 0;
     // Simulated validation, assuming all transactions are valid
     // console.log(txn)
     // const txid = getTxid(txn);
     // console.log("txid:", txid);
     // console.log("file:", Buffer.from(crypto.createHash('sha256').update(txid, "hex").digest()).toString("hex"));
     // console.log((crypto.createHash('sha256').update(getTxid(transactions[0]), "hex").digest()))
-    let a = 1;
     for(let transaction of transactions){
         // for coinbase transaction
 
@@ -105,27 +140,36 @@ function validateTransactions(transactions) {
         if (flg) {
             flg = false;
             for (let vin of transaction.vin) {
+                // if (vin.prevout.scriptpubkey_type === "v0_p2wpkh"){
+                //    flg = true
+                //    if(!script_v0_p2wpkh(vin)){
+                //     flg=false;
+                //     console.log("hey")
+                //     break;
+                //    }
+                // }
                 if (vin.prevout.scriptpubkey_type === "p2pkh") {
                     flg = true;
                     // pubkey script validation
                     if (!script_p2pkh(vin) || !verify_p2pkh(transaction, vin)) {
                         flg = false;
                         break;
+                    }else{
                     }
                 }
             }
             if (flg) {
+                ct++;
                 // console.log(transaction);
                 // getTxid(transaction);
                 // Serialize transaction
                 const serializedTransaction = serializeTransaction(transaction)
+                // console.log(Buffer.from(serializedTransaction).toString("hex"))
                 validTransactions.push(getTxid(serializedTransaction));
             }
         }
-
-        // validate signatures. we need message for that
-
     }
+    console.log(ct)
 }
 
 // Create block

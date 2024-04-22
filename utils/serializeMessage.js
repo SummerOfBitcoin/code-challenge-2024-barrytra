@@ -21,7 +21,7 @@ function serializeMessage(transaction, vin, hashType) {
         // Vout Index
         buffer = Buffer.concat([buffer, Buffer.from(input.vout.toString(16).padStart(8, '0'), 'hex').reverse()]);
 
-        if(input.prevout.scriptpubkey === vin.prevout.scriptpubkey){
+        if(input.txid === vin.txid && input.vout === vin.vout){
             buffer = Buffer.concat([buffer, encodeVarInt(vin.prevout.scriptpubkey.length / 2)]);
             buffer = Buffer.concat([buffer, Buffer.from(vin.prevout.scriptpubkey, 'hex')]);
         }else {

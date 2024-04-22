@@ -2,7 +2,7 @@
 function getScriptpubkey_v0p2wpkh(str) {
     let scriptpubkey = [];
 
-    for (let i = 21; i < str.length; i++) {
+    for (let i = 4; i < str.length; i++) {
         scriptpubkey += str[i];
     }
     return scriptpubkey.toString();
