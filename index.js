@@ -69,7 +69,7 @@ function getTxid(serializedTransaction) {
     const hash = HASH256(serializedTransaction)
 
     // Reverse byte order
-    const txid = Buffer.from(hash).reverse().toString('hex');
+    const txid = Buffer.from(hash).toString('hex');
     return txid;
 }
 
@@ -156,6 +156,7 @@ function writeToOutput(blockHeader, serializedCoinbaseTransaction, transactions)
     writeFileSync('output.txt', blockHeader + '\n');
     appendFileSync('output.txt', serializedCoinbaseTransaction + '\n');
     transactions.forEach(tx => {
+        tx = Buffer.from(tx, "hex").reverse().toString("hex");
         appendFileSync('output.txt', tx + '\n');
     });
 }
