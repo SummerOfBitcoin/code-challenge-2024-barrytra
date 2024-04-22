@@ -2,3 +2,5 @@ b_Error.txt
 c_Error.txt
 e_Error.txt
 output.txt
+node_modules
+package-lock.json
