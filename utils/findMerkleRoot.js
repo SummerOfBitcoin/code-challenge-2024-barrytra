@@ -1,33 +1,29 @@
 const crypto = require('crypto');
 const { HASH256 } = require('../op_codes/opcodes');
 
-// Function to calculate the Merkle root
-function findMerkleRoot(txns) {
-    let transactions = [...txns];
-    if (transactions.length === 1) {
-        return transactions[0];
+
+function findMerkleRoot (txids) {
+    if (txids.length === 0) return null
+
+    let level = txids
+    while (level.length > 1) {
+        const nextLevel = []
+
+        for (let i = 0; i < level.length; i += 2) {
+            let pairHash
+            if (i + 1 === level.length) {
+                // In case of an odd number of elements, duplicate the last one
+                pairHash = HASH256(level[i] + level[i])
+            } else {
+                pairHash = HASH256(level[i] + level[i + 1])
+            }
+            nextLevel.push(pairHash)
+        }
+
+        level = nextLevel
     }
 
-    // If number of transactions is odd, duplicate the last transaction
-    if (transactions.length % 2 !== 0) {
-        transactions.push(transactions[transactions.length - 1]);
-    }
-
-    const newTransactions = [];
-
-    for (let i = 0; i < transactions.length; i += 2) {
-        const left = transactions[i];
-        const right = transactions[i + 1];
-        const combined = left + right;
-
-        // Calculate the hash of the combined transactions
-        const hash = HASH256(Buffer.from(combined, "hex"));
-        newTransactions.push(Buffer.from(hash).toString("hex"));
-    }
-
-
-    // Return the final Merkle root
-    return findMerkleRoot(newTransactions);
+    return level[0]
 }
 
 module.exports = {

@@ -29,8 +29,7 @@ class Block {
 
     hashBlock() {
         const blockString = serializeBlockHeader(this.version, this.prevBlockHash, this.merkleRoot, this.timestamp, this.bits, this.nonce);
-        const buffer = Buffer.from(blockString, "hex");
-        return Buffer.from(HASH256(buffer)).reverse().toString("hex");
+        return Buffer.from(HASH256(blockString), "hex").reverse().toString("hex");
     }
 
     mineBlock(difficulty) {
@@ -64,9 +63,8 @@ function parseTransactionFile(filename) {
 function getTxid(serializedTransaction) {
 
     // Double SHA256 hash
-    const hash = HASH256(serializedTransaction)
+    const txid = HASH256(serializedTransaction)
 
-    const txid = Buffer.from(hash).toString('hex');
     return txid;
 }
 
@@ -166,6 +164,7 @@ function validateTransactions(transactions) {
                 // getTxid(transaction);
                 // Serialize transaction
                 const serializedTransaction = serializeTransaction(transaction)
+                console.log(serializedTransaction)
                 // console.log(Buffer.from(serializedTransaction).toString("hex"))
                 validTxids.push(getTxid(serializedTransaction));
                 validWTxids.push(getTxid(serializedTransaction));
@@ -224,6 +223,9 @@ function mineBlock(transactions, prevBlockHash, difficulty) {
 function writeToOutput(blockHeader, serializedCoinbaseTransaction, transactions) {
     writeFileSync('output.txt', blockHeader + '\n');
     appendFileSync('output.txt', serializedCoinbaseTransaction + '\n');
+    const coinbaseTxid = getTxid(Buffer.from(serializedCoinbaseTransaction, "hex"));
+    appendFileSync('output.txt', coinbaseTxid + '\n');
+
     transactions.forEach(tx => {
         // reverse byte order
         tx = Buffer.from(tx, "hex").reverse().toString("hex");

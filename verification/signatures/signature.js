@@ -30,7 +30,7 @@ function verify_p2pkh(transaction, input) {
 
     const txnHex = serializeMessage(transaction, input, scriptSig[signatureLength]);
     // console.log(Buffer.from(txnHex).toString("hex"))
-    const txnHash = Uint8Array.from(Buffer.from(HASH256(txnHex)));
+    const txnHash = Uint8Array.from(Buffer.from(HASH256(txnHex), "hex"));
     // console.log(Buffer.from(txnHash).toString("hex"));
 
     const isVerified = secp256k1.ecdsaVerify(derSignature,txnHash,publicKey);

@@ -11,15 +11,15 @@ function OP_HASH(s) {
 
 // HASH256 function
 function HASH256(input){
-    const hash1 = crypto.createHash('sha256').update(input).digest();
-    return crypto.createHash('sha256').update(hash1).digest();
+    const h1 = crypto.createHash('sha256').update(Buffer.from(input, 'hex')).digest()
+    return crypto.createHash('sha256').update(h1).digest('hex')
 }
 
 
 
 // SHA-256 function
 function SHA256(input) {
-    return crypto.createHash('ripemd160').update(input).digest();
+    return crypto.createHash('sha256').update(input).digest();
 }
 
 

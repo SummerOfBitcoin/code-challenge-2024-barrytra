@@ -65,7 +65,7 @@ function serializeMessage(transaction, vin, hashType) {
     // hashType
     buffer = Buffer.concat([buffer, Buffer.from(hashType.toString(16).padStart(8, '0'), 'hex').reverse()]);
 
-    return buffer;
+    return Buffer.from(buffer).toString("hex");
 }
 
 function encodeVarInt(value) {

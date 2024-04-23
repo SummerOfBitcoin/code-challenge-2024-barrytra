@@ -62,7 +62,7 @@ function serializeTransaction(transaction) {
     // Locktime
     buffer = Buffer.concat([buffer, Buffer.from(transaction.locktime.toString(16).padStart(8, '0'), 'hex').reverse()]);
         
-    return buffer;
+    return Buffer.from(buffer).toString("hex");
 }
 
 function encodeVarInt(value) {
