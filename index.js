@@ -198,11 +198,9 @@ const witnessCommitment = calculateWitnessCommitment(validWTxids)
 
 const serializedCoinbaseTransaction = `010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff2503233708184d696e656420627920416e74506f6f6c373946205b8160a4256c0000946e0100ffffffff02f595814a000000001976a914edf10a7fac6b32e24daa5305c723f3de58db1bc888ac0000000000000000266a24aa21a9ed${witnessCommitment}0120000000000000000000000000000000000000000000000000000000000000000000000000`
 
-const coinbaseTxid = getTxid(Buffer.from(serializedCoinbaseTransaction, "hex"));
+const coinbaseTxid = getTxid(serializedCoinbaseTransaction);
 
-
-
-
+validTxids.unshift(coinbaseTxid)
 // Testing
 const prevBlockHash = "0000000000000000000000000000000000000000000000000000000000000000";
 const difficulty = "0000ffff00000000000000000000000000000000000000000000000000000000";
@@ -223,8 +221,6 @@ function mineBlock(transactions, prevBlockHash, difficulty) {
 function writeToOutput(blockHeader, serializedCoinbaseTransaction, transactions) {
     writeFileSync('output.txt', blockHeader + '\n');
     appendFileSync('output.txt', serializedCoinbaseTransaction + '\n');
-    const coinbaseTxid = getTxid(Buffer.from(serializedCoinbaseTransaction, "hex"));
-    appendFileSync('output.txt', coinbaseTxid + '\n');
 
     transactions.forEach(tx => {
         // reverse byte order
