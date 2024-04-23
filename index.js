@@ -1,6 +1,7 @@
 const { readFileSync, writeFileSync, appendFileSync } = require('fs');
 const crypto = require('crypto');
 const { serializeTransaction } = require("./utils/serializeTransaction");
+const { serializeWitnessTransaction } = require("./utils/serializeWitnessTransaction");
 const { findMerkleRoot } = require("./utils/findMerkleRoot");
 const { script_p2pkh, script_v0_p2wpkh } = require("./verification/script/script")
 const { HASH256 } = require("./op_codes/opcodes");
@@ -61,6 +62,14 @@ function parseTransactionFile(filename) {
 
 
 function getTxid(serializedTransaction) {
+
+    // Double SHA256 hash
+    const txid = HASH256(serializedTransaction)
+
+    return txid;
+}
+
+function getWTxid(serializedTransaction) {
 
     // Double SHA256 hash
     const txid = HASH256(serializedTransaction)
@@ -140,21 +149,19 @@ function validateTransactions(transactions) {
         if (flg) {
             flg = false;
             for (let vin of transaction.vin) {
-                // if (vin.prevout.scriptpubkey_type === "v0_p2wpkh"){
-                //    flg = true
-                //    if(!script_v0_p2wpkh(vin)){
-                //     flg=false;
-                //     console.log("hey")
-                //     break;
-                //    }
-                // }
+                if (vin.prevout.scriptpubkey_type === "v0_p2wpkh"){
+                   flg = true
+                   if(!script_v0_p2wpkh(vin) || !verify_v0_p2wpkh(transaction, vin)){
+                    flg=false;
+                    break;
+                   }
+                }
                 if (vin.prevout.scriptpubkey_type === "p2pkh") {
                     flg = true;
                     // pubkey script validation
                     if (!script_p2pkh(vin) || !verify_p2pkh(transaction, vin)) {
                         flg = false;
                         break;
-                    }else{
                     }
                 }
             }
@@ -163,11 +170,12 @@ function validateTransactions(transactions) {
                 // console.log(transaction);
                 // getTxid(transaction);
                 // Serialize transaction
-                const serializedTransaction = serializeTransaction(transaction)
-                console.log(serializedTransaction)
-                // console.log(Buffer.from(serializedTransaction).toString("hex"))
+                const serializedTransaction = serializeTransaction(txn)
+                const serializedWitnessTransaction = serializeWitnessTransaction(txn)
+                // console.log(serializedTransaction)
+                // console.log(getTxid(serializedTransaction))
                 validTxids.push(getTxid(serializedTransaction));
-                validWTxids.push(getTxid(serializedTransaction));
+                validWTxids.push(getWTxid(serializedWitnessTransaction));
             }
         }
     }

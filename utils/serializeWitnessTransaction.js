@@ -1,8 +1,14 @@
-function serializeMessage(transaction, vin, hashType) {
+function serializeWitnessTransaction(transaction) {
     let buffer = Buffer.alloc(0);
 
     // Version
     buffer = Buffer.concat([buffer, Buffer.from(transaction.version.toString(16).padStart(8, '0'), 'hex').reverse()]);
+
+    // Marker and Flag for SegWit
+    if (transaction.vin[0].witness) {
+        buffer = Buffer.concat([buffer, Buffer.from('00', 'hex')]); // Marker
+        buffer = Buffer.concat([buffer, Buffer.from('01', 'hex')]); // Flag
+    }
 
     // Input Count
     buffer = Buffer.concat([buffer, encodeVarInt(transaction.vin.length)]);
@@ -15,12 +21,12 @@ function serializeMessage(transaction, vin, hashType) {
         // Vout Index
         buffer = Buffer.concat([buffer, Buffer.from(input.vout.toString(16).padStart(8, '0'), 'hex').reverse()]);
 
-        if(input.txid === vin.txid && input.vout === vin.vout){
-            buffer = Buffer.concat([buffer, encodeVarInt(vin.prevout.scriptpubkey.length / 2)]);
-            buffer = Buffer.concat([buffer, Buffer.from(vin.prevout.scriptpubkey, 'hex')]);
-        }else {
-            buffer = Buffer.concat([buffer, Buffer.from('00', 'hex')])
-        }
+        // Script Length
+        buffer = Buffer.concat([buffer, encodeVarInt(input.scriptsig.length / 2)]);
+
+        // Unlocking Script
+        buffer = Buffer.concat([buffer, Buffer.from(input.scriptsig, 'hex')]);
+
 
         // Sequence
         buffer = Buffer.concat([buffer, Buffer.from(input.sequence.toString(16).padStart(8, '0'), 'hex').reverse()]);
@@ -41,11 +47,20 @@ function serializeMessage(transaction, vin, hashType) {
         buffer = Buffer.concat([buffer, Buffer.from(output.scriptpubkey, 'hex')]);
     }
 
-    // Locktime
-    buffer = Buffer.concat([buffer, Buffer.from(transaction.locktime.toString(16).padStart(8, '0'), 'hex').reverse()])
+    // Witness Data (for SegWit)
+    for (let input of transaction.vin) {
+        if (input.witness) {
+            buffer = Buffer.concat([buffer, encodeVarInt(input.witness.length)]);
+            for (let witnessItem of input.witness) {
+                buffer = Buffer.concat([buffer, encodeVarInt(witnessItem.length / 2)]);
 
-    // hashType
-    buffer = Buffer.concat([buffer, Buffer.from(hashType.toString(16).padStart(8, '0'), 'hex').reverse()]);
+                buffer = Buffer.concat([buffer, Buffer.from(witnessItem, 'hex')]);
+            }
+        }
+    }
+
+    // Locktime
+    buffer = Buffer.concat([buffer, Buffer.from(transaction.locktime.toString(16).padStart(8, '0'), 'hex').reverse()]);
 
     return Buffer.from(buffer).toString("hex");
 }
@@ -63,5 +78,5 @@ function encodeVarInt(value) {
 }
 
 module.exports = {
-    serializeMessage,
+    serializeWitnessTransaction,
 }

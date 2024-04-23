@@ -4,12 +4,6 @@ function serializeTransaction(transaction) {
     // Version
     buffer = Buffer.concat([buffer, Buffer.from(transaction.version.toString(16).padStart(8, '0'), 'hex').reverse()]);
 
-    // Marker and Flag for SegWit
-    if (transaction.vin[0].witness) {
-        buffer = Buffer.concat([buffer, Buffer.from('00', 'hex')]); // Marker
-        buffer = Buffer.concat([buffer, Buffer.from('01', 'hex')]); // Flag
-    }
-
     // Input Count
     buffer = Buffer.concat([buffer, encodeVarInt(transaction.vin.length)]);
 
@@ -24,7 +18,7 @@ function serializeTransaction(transaction) {
         // Script Length
         buffer = Buffer.concat([buffer, encodeVarInt(input.scriptsig.length / 2)]);
 
-            // Unlocking Script
+        // Unlocking Script
         buffer = Buffer.concat([buffer, Buffer.from(input.scriptsig, 'hex')]);
 
 
@@ -45,18 +39,6 @@ function serializeTransaction(transaction) {
 
         // Locking Script
         buffer = Buffer.concat([buffer, Buffer.from(output.scriptpubkey, 'hex')]);
-    }
-
-    // Witness Data (for SegWit)
-    for (let input of transaction.vin) {
-            if (input.witness) {
-            buffer = Buffer.concat([buffer, encodeVarInt(input.witness.length)]);
-            for (let witnessItem of input.witness) {
-                buffer = Buffer.concat([buffer, encodeVarInt(witnessItem.length / 2)]);
-
-                buffer = Buffer.concat([buffer, Buffer.from(witnessItem, 'hex')]);
-            }
-        }
     }
 
     // Locktime

@@ -8,10 +8,7 @@ const WITNESS_RESERVED_VALUE = Buffer.from(
 
 function calculateWitnessCommitment(wtxids){
     const witnessRoot = findMerkleRoot(wtxids)
-    console.log(witnessRoot)
     const witnessReservedValue = WITNESS_RESERVED_VALUE.toString('hex')
-    console.log(witnessReservedValue)
-    console.log(HASH256(witnessRoot + witnessReservedValue))
     return HASH256(witnessRoot + witnessReservedValue)
 }
 
