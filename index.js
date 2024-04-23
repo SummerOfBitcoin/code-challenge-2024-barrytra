@@ -6,6 +6,7 @@ const { script_p2pkh, script_v0_p2wpkh } = require("./verification/script/script
 const { HASH256 } = require("./op_codes/opcodes");
 const { verify_p2pkh, verify_v0_p2wpkh } = require('./verification/signatures/signature');
 const {serializeBlockHeader} = require("./utils/serializeBlockHeader");
+const {calculateWitnessCommitment} = require("./utils/calculateWitnessCommitment")
 
 class Transaction {
     constructor(version, locktime, vin, vout) {
@@ -105,7 +106,8 @@ const txn = {
 }
 
 // Validate transactions
-let validTransactions = [];
+let validTxids = [];
+let validWTxids = ['0000000000000000000000000000000000000000000000000000000000000000']
 function validateTransactions(transactions) {
     let ct = 0;
     // Simulated validation, assuming all transactions are valid
@@ -165,7 +167,8 @@ function validateTransactions(transactions) {
                 // Serialize transaction
                 const serializedTransaction = serializeTransaction(transaction)
                 // console.log(Buffer.from(serializedTransaction).toString("hex"))
-                validTransactions.push(getTxid(serializedTransaction));
+                validTxids.push(getTxid(serializedTransaction));
+                validWTxids.push(getTxid(serializedTransaction));
             }
         }
     }
@@ -177,15 +180,41 @@ function createBlock(transactions, prevBlockHash, difficulty, merkleRoot) {
     return new Block(transactions, prevBlockHash, difficulty, merkleRoot);
 }
 
-const serializedCoinbaseTransaction = "010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff2503233708184d696e656420627920416e74506f6f6c373946205b8160a4256c0000946e0100ffffffff02f595814a000000001976a914edf10a7fac6b32e24daa5305c723f3de58db1bc888ac0000000000000000266a24aa21a9ede2f61c3f71d1defd3fa999dfa36953755c690689799962b48bebd836974e8cf90120000000000000000000000000000000000000000000000000000000000000000000000000"
+// importing transaction files and adding them into transactionFiles object;
+var transactionFiles = [];
+var normalizedPath = require("path").join(__dirname, "mempool");
+
+
+require("fs").readdirSync(normalizedPath).forEach(function (file) {
+    const curFile = require("./mempool/" + file);
+    transactionFiles.push(curFile);
+});
+// console.log(transactionFiles);
+const transactions = transactionFiles.map(parseTransactionFile);
+// console.log(transactions)
+
+validateTransactions(transactions);
+
+const witnessCommitment = calculateWitnessCommitment(validWTxids)
+
+const serializedCoinbaseTransaction = `010000000001010000000000000000000000000000000000000000000000000000000000000000ffffffff2503233708184d696e656420627920416e74506f6f6c373946205b8160a4256c0000946e0100ffffffff02f595814a000000001976a914edf10a7fac6b32e24daa5305c723f3de58db1bc888ac0000000000000000266a24aa21a9ed${witnessCommitment}0120000000000000000000000000000000000000000000000000000000000000000000000000`
 
 const coinbaseTxid = getTxid(Buffer.from(serializedCoinbaseTransaction, "hex"));
-validTransactions.push(coinbaseTxid);
+
+
+
+
+// Testing
+const prevBlockHash = "0000000000000000000000000000000000000000000000000000000000000000";
+const difficulty = "0000ffff00000000000000000000000000000000000000000000000000000000";
+
+
+
+
 
 // Mine block
 function mineBlock(transactions, prevBlockHash, difficulty) {
-    validateTransactions(transactions);
-    const merkleRoot = findMerkleRoot(validTransactions);
+    const merkleRoot = findMerkleRoot(validTxids);
     const block = createBlock(prevBlockHash, merkleRoot);
     const minedBlockHash = block.mineBlock(difficulty);
     return { minedBlockHash, block };
@@ -202,29 +231,10 @@ function writeToOutput(blockHeader, serializedCoinbaseTransaction, transactions)
     });
 }
 
-// Testing
-const prevBlockHash = "0000000000000000000000000000000000000000000000000000000000000000";
-const difficulty = "0000ffff00000000000000000000000000000000000000000000000000000000";
-
-// importing transaction files and adding them into transactionFiles object;
-
-var transactionFiles = [];
-var normalizedPath = require("path").join(__dirname, "mempool");
-
-
-require("fs").readdirSync(normalizedPath).forEach(function (file) {
-    const curFile = require("./mempool/" + file);
-    transactionFiles.push(curFile);
-});
-// console.log(transactionFiles);
-const transactions = transactionFiles.map(parseTransactionFile);
-// console.log(transactions)
-
-
 // Mine block
 const { minedBlockHash, block } = mineBlock(transactionFiles, prevBlockHash, difficulty);
 
 // Write to output.txt
-writeToOutput(block.getBlockHeader(), serializedCoinbaseTransaction, validTransactions);
+writeToOutput(block.getBlockHeader(), serializedCoinbaseTransaction, validTxids);
 // console.log(`Mined block hash: ${minedBlockHash}`);
 // console.log('Block and transactions written to output.txt');
