@@ -159,14 +159,14 @@ function validateTransactions(transactions) {
                         break;
                     }
                 }
-                // if (vin.prevout.scriptpubkey_type === "p2pkh") {
-                //     flg = true;
-                //     // pubkey script validation
-                //     if (!script_p2pkh(vin) || !verify_p2pkh(transaction, vin)) {
-                //         flg = false;
-                //         break;
-                //     }
-                // }
+                if (vin.prevout.scriptpubkey_type === "p2pkh") {
+                    flg = true;
+                    // pubkey script validation
+                    if (!script_p2pkh(vin) || !verify_p2pkh(transaction, vin)) {
+                        flg = false;
+                        break;
+                    }
+                }
             }
             if (flg) {
                 ct++;
@@ -174,7 +174,7 @@ function validateTransactions(transactions) {
                 // getTxid(transaction);
                 // Serialize transaction
                 const serializedTransaction = serializeTransaction(transaction)
-                const serializedWitnessTransaction = serializeWitnessTransaction(transaction)
+                const serializedWitnessTransaction = serializeWitnessTransaction(txn)
                 // console.log(serializedTransaction)
                 // console.log(getTxid(serializedTransaction))
                 validTxids.push(getTxid(serializedTransaction));
