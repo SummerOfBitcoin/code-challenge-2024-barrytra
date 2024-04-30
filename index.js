@@ -173,8 +173,8 @@ function validateTransactions(transactions) {
                 // console.log(transaction);
                 // getTxid(transaction);
                 // Serialize transaction
-                const serializedTransaction = serializeTransaction(txn)
-                const serializedWitnessTransaction = serializeWitnessTransaction(txn)
+                const serializedTransaction = serializeTransaction(transaction)
+                const serializedWitnessTransaction = serializeWitnessTransaction(transaction)
                 // console.log(serializedTransaction)
                 // console.log(getTxid(serializedTransaction))
                 validTxids.push(getTxid(serializedTransaction));
