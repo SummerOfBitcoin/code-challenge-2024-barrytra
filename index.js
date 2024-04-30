@@ -3,11 +3,11 @@ const crypto = require('crypto');
 const { serializeTransaction } = require("./utils/serializeTransaction");
 const { serializeWitnessTransaction } = require("./utils/serializeWitnessTransaction");
 const { findMerkleRoot } = require("./utils/findMerkleRoot");
-const { pubkey_p2pkh, pubkey_v0_p2wpkh} = require("./verification/script/pubkeyscript")
+const { pubkey_p2pkh, pubkey_v0_p2wpkh } = require("./verification/script/pubkeyscript")
 const { HASH256 } = require("./op_codes/opcodes");
 const { signature_p2pkh, signature_v0_p2wpkh } = require('./verification/signatures/signaturescript');
-const {serializeBlockHeader} = require("./utils/serializeBlockHeader");
-const {calculateWitnessCommitment} = require("./utils/calculateWitnessCommitment")
+const { serializeBlockHeader } = require("./utils/serializeBlockHeader");
+const { calculateWitnessCommitment } = require("./utils/calculateWitnessCommitment")
 
 class Transaction {
     constructor(version, locktime, vin, vout) {
@@ -19,11 +19,11 @@ class Transaction {
 }
 
 class Block {
-    constructor( prevBlockHash, merkleRoot) {
+    constructor(prevBlockHash, merkleRoot) {
         this.version = "20000000";
         this.prevBlockHash = prevBlockHash;
         this.merkleRoot = merkleRoot;
-        this.timestamp = Date.now()/1000;
+        this.timestamp = Date.now() / 1000;
         this.bits = "1f00ffff";
         this.nonce = 0;
     }
@@ -73,7 +73,7 @@ function getWTxid(serializedTransaction) {
 let validTxids = [];
 let validWTxids = ['0000000000000000000000000000000000000000000000000000000000000000']
 function validateTransactions(transactions) {
-    for(let transaction of transactions){
+    for (let transaction of transactions) {
         let flg = true;
 
         // ***CHECK INPUT SUM IS GREATER THAN OUTPUT SUM***
@@ -85,6 +85,7 @@ function validateTransactions(transactions) {
             outputSum += output.value;
         })
 
+
         // if below condition holds, txn is invalid
         if (inputSum <= outputSum) {
             flg = false;
@@ -95,16 +96,16 @@ function validateTransactions(transactions) {
             flg = false;
             for (let vin of transaction.vin) {
                 // if prevout is of type v1_p2tr
-                if (vin.prevout.scriptpubkey_type === "v1_p2tr"){
+                if (vin.prevout.scriptpubkey_type === "v1_p2tr") {
                     flg = true;
                 }
                 // if prevout is of type v0_p2pkh
-                if (vin.prevout.scriptpubkey_type === "v0_p2wpkh"){
-                   flg = true
-                   if(!pubkey_v0_p2wpkh(vin) || !signature_v0_p2wpkh(transaction, vin)){
-                    flg=false;
-                    break;
-                   }
+                if (vin.prevout.scriptpubkey_type === "v0_p2wpkh") {
+                    flg = true
+                    if (!pubkey_v0_p2wpkh(vin) || !signature_v0_p2wpkh(transaction, vin)) {
+                        flg = false;
+                        break;
+                    }
                 }
                 // if prevout is of type p2pkh
                 if (vin.prevout.scriptpubkey_type === "p2pkh") {
@@ -116,17 +117,19 @@ function validateTransactions(transactions) {
                 }
             }
             if (flg) {
-                ct++;
                 // Serialize transaction
                 const serializedTransaction = serializeTransaction(transaction)
                 const serializedWitnessTransaction = serializeWitnessTransaction(transaction)
-                
+
                 validTxids.push(getTxid(serializedTransaction));
                 validWTxids.push(getWTxid(serializedWitnessTransaction));
             }
         }
     }
 }
+
+
+
 
 // Create block
 function createBlock(transactions, prevBlockHash, difficulty, merkleRoot) {
@@ -144,6 +147,12 @@ function parseTransactionFile(filename) {
     return new Transaction(version, locktime, vin, vout);
 }
 
+// Parse transaction JSON files
+function parseTransactionFile(filename) {
+    const { version, locktime, vin, vout } = filename;
+    return new Transaction(version, locktime, vin, vout);
+}
+
 require("fs").readdirSync(normalizedPath).forEach(function (file) {
     const curFile = require("./mempool/" + file);
     transactionFiles.push(curFile);
@@ -152,7 +161,7 @@ require("fs").readdirSync(normalizedPath).forEach(function (file) {
 // listing all txns
 const transactions = transactionFiles.map(parseTransactionFile);
 
-// filtering out validate txns
+// filtering out validate
 validateTransactions(transactions);
 
 const witnessCommitment = calculateWitnessCommitment(validWTxids)
@@ -162,7 +171,9 @@ const serializedCoinbaseTransaction = `01000000000101000000000000000000000000000
 const coinbaseTxid = getTxid(serializedCoinbaseTransaction);
 
 // add coinbase txn at start of all valid txns
+// add coinbase txn at start of all valid txns
 validTxids.unshift(coinbaseTxid)
+
 
 const prevBlockHash = "0000000000000000000000000000000000000000000000000000000000000000";
 const difficulty = "0000ffff00000000000000000000000000000000000000000000000000000000";
@@ -172,7 +183,7 @@ function mineBlock(transactions, prevBlockHash, difficulty) {
     const merkleRoot = findMerkleRoot(validTxids);
     const block = createBlock(prevBlockHash, merkleRoot);
     block.mineBlock(difficulty);
-    return block ;
+    return block;
 }
 
 // Write block and transactions to output.txt
@@ -192,5 +203,4 @@ const block = mineBlock(transactionFiles, prevBlockHash, difficulty);
 
 // Write to output.txt
 writeToOutput(block.getBlockHeader(), serializedCoinbaseTransaction, validTxids);
-// console.log(`Mined block hash: ${minedBlockHash}`);
-// console.log('Block and transactions written to output.txt');
+
