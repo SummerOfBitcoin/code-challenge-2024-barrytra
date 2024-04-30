@@ -3,7 +3,7 @@ const { HASH256 } = require('../../op_codes/opcodes');
 const secp256k1 = require('secp256k1');
 const { serializeWitnessMessage } = require('../../utils/serializeWitnessMessage');
 
-function verify_p2pkh(transaction, input) {
+function signature_p2pkh(transaction, input) {
     const scriptSig = new Uint8Array(Buffer.from(input.scriptsig, 'hex'));
  
     // Extract signature and public key from scriptSig
@@ -39,7 +39,7 @@ function verify_p2pkh(transaction, input) {
     return isVerified;
 }
 
-function verify_v0_p2wpkh(transaction, input) {
+function signature_v0_p2wpkh(transaction, input) {
     const signature = new Uint8Array(Buffer.from(input.witness[0], 'hex'));
     const publicKey = new Uint8Array(Buffer.from(input.witness[1], 'hex'));
 
@@ -70,6 +70,6 @@ function verify_v0_p2wpkh(transaction, input) {
 
 
 module.exports = {
-    verify_p2pkh,
-    verify_v0_p2wpkh,
+    signature_p2pkh,
+    signature_v0_p2wpkh,
 }
