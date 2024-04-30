@@ -3,9 +3,9 @@ const { HASH256 } = require('../../op_codes/opcodes');
 const secp256k1 = require('secp256k1');
 const { serializeWitnessMessage } = require('../../utils/serializeWitnessMessage');
 
-function signature_p2pkh(transaction, input) {
+function verify_p2pkh(transaction, input) {
     const scriptSig = new Uint8Array(Buffer.from(input.scriptsig, 'hex'));
- 
+
     // Extract signature and public key from scriptSig
     const signatureLength = scriptSig[0];
     const signature = scriptSig.slice(1, 1 + signatureLength);
@@ -27,19 +27,19 @@ function signature_p2pkh(transaction, input) {
     const publicKey = scriptSig.slice(1 + signatureLength + 1);
     // console.log(Buffer.from(publicKey).toString("hex"))
 
-    
+
 
     const txnHex = serializeMessage(transaction, input, scriptSig[signatureLength]);
     // console.log(Buffer.from(txnHex).toString("hex"))
     const txnHash = Uint8Array.from(Buffer.from(HASH256(txnHex), "hex"));
     // console.log(Buffer.from(txnHash).toString("hex"));
 
-    const isVerified = secp256k1.ecdsaVerify(derSignature,txnHash,publicKey);
+    const isVerified = secp256k1.ecdsaVerify(derSignature, txnHash, publicKey);
     // console.log(isVerified)
     return isVerified;
 }
 
-function signature_v0_p2wpkh(transaction, input) {
+function verify_v0_p2wpkh(transaction, input) {
     const signature = new Uint8Array(Buffer.from(input.witness[0], 'hex'));
     const publicKey = new Uint8Array(Buffer.from(input.witness[1], 'hex'));
 
@@ -70,6 +70,6 @@ function signature_v0_p2wpkh(transaction, input) {
 
 
 module.exports = {
-    signature_p2pkh,
-    signature_v0_p2wpkh,
+    verify_p2pkh,
+    verify_v0_p2wpkh,
 }

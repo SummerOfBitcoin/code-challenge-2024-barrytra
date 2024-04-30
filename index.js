@@ -3,9 +3,9 @@ const crypto = require('crypto');
 const { serializeTransaction } = require("./utils/serializeTransaction");
 const { serializeWitnessTransaction } = require("./utils/serializeWitnessTransaction");
 const { findMerkleRoot } = require("./utils/findMerkleRoot");
-const { pubkey_p2pkh, pubkey_v0_p2wpkh } = require("./verification/script/pubkeyscript")
+const { script_p2pkh, script_v0_p2wpkh } = require("./verification/script/script")
 const { HASH256 } = require("./op_codes/opcodes");
-const { signature_p2pkh, signature_v0_p2wpkh } = require('./verification/signatures/signaturescript');
+const { verify_p2pkh, verify_v0_p2wpkh } = require('./verification/signatures/signature');
 const { serializeBlockHeader } = require("./utils/serializeBlockHeader");
 const { calculateWitnessCommitment } = require("./utils/calculateWitnessCommitment")
 
@@ -53,6 +53,14 @@ class Block {
     }
 }
 
+
+// Parse transaction JSON files
+function parseTransactionFile(filename) {
+    const { version, locktime, vin, vout } = filename;
+    return new Transaction(version, locktime, vin, vout);
+}
+
+
 function getTxid(serializedTransaction) {
 
     // Double SHA256 hash
@@ -69,12 +77,60 @@ function getWTxid(serializedTransaction) {
     return txid;
 }
 
+const txn = {
+    "version": 1,
+    "locktime": 0,
+    "vin": [
+        {
+            "txid": "f615c0412f959c0b3813cbd232bbb1c1a8ad656c37fb60b601f633a6d2d76942",
+            "vout": 20,
+            "prevout": {
+                "scriptpubkey": "0014df4bf9f3621073202be59ae590f55f42879a21a0",
+                "scriptpubkey_asm": "OP_0 OP_PUSHBYTES_20 df4bf9f3621073202be59ae590f55f42879a21a0",
+                "scriptpubkey_type": "v0_p2wpkh",
+                "scriptpubkey_address": "bc1qma9lnumzzpejq2l9ntjepa2lg2re5gdqn3nf0c",
+                "value": 175902
+            },
+            "scriptsig": "",
+            "scriptsig_asm": "",
+            "witness": [
+                "3045022100a2a839100b7ca7dc97ca8234de56caabc5d30bf5ce561aa61ac1925d9ed09ed60220625b88cc6ddc0715c178fb57fd1ffb65ee905de7670595f2dea9c5feeb6b40d401",
+                "03cbf0481cd6ca805552d024e051f1f73086a2abebecdec8bc793d5ef87ec1a2f6"
+            ],
+            "is_coinbase": false,
+            "sequence": 4294967295
+        }
+    ],
+    "vout": [
+        {
+            "scriptpubkey": "a914626b93cce10ebd0d4d876487f602272c01e39e2387",
+            "scriptpubkey_asm": "OP_HASH160 OP_PUSHBYTES_20 626b93cce10ebd0d4d876487f602272c01e39e23 OP_EQUAL",
+            "scriptpubkey_type": "p2sh",
+            "scriptpubkey_address": "3AfR1wwfaaftqLfv2pAa9ebEXG43uZ9cdn",
+            "value": 172905
+        }
+    ]
+}
+
 // Validate transactions
 let validTxids = [];
 let validWTxids = ['0000000000000000000000000000000000000000000000000000000000000000']
 function validateTransactions(transactions) {
+    let ct = 0;
+    // Simulated validation, assuming all transactions are valid
+    // console.log(txn)
+    // const txid = getTxid(txn);
+    // console.log("txid:", txid);
+    // console.log("file:", Buffer.from(crypto.createHash('sha256').update(txid, "hex").digest()).toString("hex"));
+    // console.log((crypto.createHash('sha256').update(getTxid(transactions[0]), "hex").digest()))
     for (let transaction of transactions) {
+        // for coinbase transaction
+
+        // OP_HASH(transaction);
         let flg = true;
+        // if(transaction.vin[0].prevout.scriptpubkey_type === "p2sh"){
+        //     console.log(transaction.vin[0].txid);
+        // }
 
         // ***CHECK INPUT SUM IS GREATER THAN OUTPUT SUM***
         let inputSum = 0, outputSum = 0;
@@ -84,52 +140,50 @@ function validateTransactions(transactions) {
         transaction.vout.map((output) => {
             outputSum += output.value;
         })
-
-
         // if below condition holds, txn is invalid
         if (inputSum <= outputSum) {
             flg = false;
+            delete transactions.transaction;
         }
-
-        //  *** check pubkey script and signature script validation ***
+        //  *** check pubkey script validation ***
         if (flg) {
             flg = false;
             for (let vin of transaction.vin) {
-                // if prevout is of type v1_p2tr
                 if (vin.prevout.scriptpubkey_type === "v1_p2tr") {
                     flg = true;
                 }
-                // if prevout is of type v0_p2pkh
                 if (vin.prevout.scriptpubkey_type === "v0_p2wpkh") {
                     flg = true
-                    if (!pubkey_v0_p2wpkh(vin) || !signature_v0_p2wpkh(transaction, vin)) {
+                    if (!script_v0_p2wpkh(vin) || !verify_v0_p2wpkh(transaction, vin)) {
                         flg = false;
                         break;
                     }
                 }
-                // if prevout is of type p2pkh
                 if (vin.prevout.scriptpubkey_type === "p2pkh") {
                     flg = true;
-                    if (!pubkey_p2pkh(vin) || !signature_p2pkh(transaction, vin)) {
+                    // pubkey script validation
+                    if (!script_p2pkh(vin) || !verify_p2pkh(transaction, vin)) {
                         flg = false;
                         break;
                     }
                 }
             }
             if (flg) {
+                ct++;
+                // console.log(transaction);
+                // getTxid(transaction);
                 // Serialize transaction
-                const serializedTransaction = serializeTransaction(transaction)
-                const serializedWitnessTransaction = serializeWitnessTransaction(transaction)
-
+                const serializedTransaction = serializeTransaction(txn)
+                const serializedWitnessTransaction = serializeWitnessTransaction(txn)
+                // console.log(serializedTransaction)
+                // console.log(getTxid(serializedTransaction))
                 validTxids.push(getTxid(serializedTransaction));
                 validWTxids.push(getWTxid(serializedWitnessTransaction));
             }
         }
     }
+    console.log(ct)
 }
-
-
-
 
 // Create block
 function createBlock(transactions, prevBlockHash, difficulty, merkleRoot) {
@@ -141,27 +195,14 @@ var transactionFiles = [];
 var normalizedPath = require("path").join(__dirname, "mempool");
 
 
-// Parse transaction JSON files
-function parseTransactionFile(filename) {
-    const { version, locktime, vin, vout } = filename;
-    return new Transaction(version, locktime, vin, vout);
-}
-
-// Parse transaction JSON files
-function parseTransactionFile(filename) {
-    const { version, locktime, vin, vout } = filename;
-    return new Transaction(version, locktime, vin, vout);
-}
-
 require("fs").readdirSync(normalizedPath).forEach(function (file) {
     const curFile = require("./mempool/" + file);
     transactionFiles.push(curFile);
 });
-
-// listing all txns
+// console.log(transactionFiles);
 const transactions = transactionFiles.map(parseTransactionFile);
+// console.log(transactions)
 
-// filtering out validate
 validateTransactions(transactions);
 
 const witnessCommitment = calculateWitnessCommitment(validWTxids)
@@ -170,20 +211,21 @@ const serializedCoinbaseTransaction = `01000000000101000000000000000000000000000
 
 const coinbaseTxid = getTxid(serializedCoinbaseTransaction);
 
-// add coinbase txn at start of all valid txns
-// add coinbase txn at start of all valid txns
 validTxids.unshift(coinbaseTxid)
-
-
+// Testing
 const prevBlockHash = "0000000000000000000000000000000000000000000000000000000000000000";
 const difficulty = "0000ffff00000000000000000000000000000000000000000000000000000000";
+
+
+
+
 
 // Mine block
 function mineBlock(transactions, prevBlockHash, difficulty) {
     const merkleRoot = findMerkleRoot(validTxids);
     const block = createBlock(prevBlockHash, merkleRoot);
-    block.mineBlock(difficulty);
-    return block;
+    const minedBlockHash = block.mineBlock(difficulty);
+    return { minedBlockHash, block };
 }
 
 // Write block and transactions to output.txt
@@ -199,8 +241,9 @@ function writeToOutput(blockHeader, serializedCoinbaseTransaction, transactions)
 }
 
 // Mine block
-const block = mineBlock(transactionFiles, prevBlockHash, difficulty);
+const { minedBlockHash, block } = mineBlock(transactionFiles, prevBlockHash, difficulty);
 
 // Write to output.txt
 writeToOutput(block.getBlockHeader(), serializedCoinbaseTransaction, validTxids);
-
+// console.log(`Mined block hash: ${minedBlockHash}`);
+// console.log('Block and transactions written to output.txt');

@@ -2,14 +2,14 @@ const { OP_HASH } = require("../../op_codes/opcodes");
 const { getScriptpubkey_v0p2wpkh, getScriptpubkey_p2pkh } = require("../../utils/scriptpubkey");
 
 // script verification of txn typpe v0_p2wpkh
-function pubkey_v0_p2wpkh(vin) {
+function script_v0_p2wpkh(vin) {
     let hash = OP_HASH(vin.witness[1]);
     let scriptPubkey = getScriptpubkey_v0p2wpkh(vin.prevout.scriptpubkey);
     if (hash === scriptPubkey) return true;
     return false;
 }
 
-function pubkey_p2pkh(vin) {
+function script_p2pkh(vin) {
     let pubkey = [];
     for (let i = vin.scriptsig.length - 66; i < vin.scriptsig.length; i++) {
         pubkey += vin.scriptsig[i];
@@ -23,6 +23,6 @@ function pubkey_p2pkh(vin) {
 
 
 module.exports = {
-    pubkey_p2pkh,
-    pubkey_v0_p2wpkh,
+    script_v0_p2wpkh,
+    script_p2pkh,
 }
