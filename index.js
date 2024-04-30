@@ -149,9 +149,9 @@ function validateTransactions(transactions) {
         if (flg) {
             flg = false;
             for (let vin of transaction.vin) {
-                if (vin.prevout.scriptpubkey_type === "v1_p2tr") {
-                    flg = true;
-                }
+                // if (vin.prevout.scriptpubkey_type === "v1_p2tr") {
+                //     flg = true;
+                // }
                 if (vin.prevout.scriptpubkey_type === "v0_p2wpkh") {
                     flg = true
                     if (!script_v0_p2wpkh(vin) || !verify_v0_p2wpkh(transaction, vin)) {
@@ -174,7 +174,7 @@ function validateTransactions(transactions) {
                 // getTxid(transaction);
                 // Serialize transaction
                 const serializedTransaction = serializeTransaction(transaction)
-                const serializedWitnessTransaction = serializeWitnessTransaction(txn)
+                const serializedWitnessTransaction = serializeWitnessTransaction(transaction)
                 // console.log(serializedTransaction)
                 // console.log(getTxid(serializedTransaction))
                 validTxids.push(getTxid(serializedTransaction));
